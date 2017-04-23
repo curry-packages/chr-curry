@@ -2,9 +2,9 @@ chr-curry
 =========
 
 This package contains a library `CHR` which provides an implementation of
-Constraint Handling Rules in Curry, an interpreter for CHR rules based
-on the refined operational semantics of Duck et al. (ICLP 2004),
-and a compiler into CHR(Prolog).
+[Constraint Handling Rules](https://dtai.cs.kuleuven.be/CHR/) in Curry,
+an interpreter for CHR rules based on the refined operational semantics of
+Duck et al. (ICLP 2004), and a compiler into CHR(Prolog).
 
 To use CHR(Curry), specify the CHR(Curry) rules in a Curry program,
 load it, add module `CHR` and interpret or compile the rules
