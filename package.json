@@ -1,0 +1,26 @@
+{
+    "name": "chr-curry",
+    "version": "0.0.1",
+    "author": "Michael Hanus <mh@informatik.uni-kiel.de",
+    "synopsis": "A library to use Constraint Handling Rules in Curry programs",
+    "category": [ "Programming", "Constraints" ],
+    "dependencies": {
+    },
+    "exportedModules": [ "CHR" ],
+    "description": "This library an implementation of Constraints Handling
+                    Rules in Curry.",
+    "compilerCompatibility": {
+        "pakcs": ">= 1.14.0, < 2.0.0"
+    },
+    "license": "BSD-3-Clause",
+    "licenseFile": "LICENSE",
+    "testsuite": {
+        "src-dir": "examples",
+        "options": "-v",
+        "script":  "test.sh"
+    },
+     "source": {
+        "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/chr-curry.git",
+        "tag": "$version"
+    }
+}
