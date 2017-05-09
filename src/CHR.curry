@@ -18,7 +18,7 @@
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
 
 module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
-           true, fail, andCHR, allCHR, chrsToGoal,
+           true, false, andCHR, allCHR, chrsToGoal,
            toGoal1, toGoal2, toGoal3, toGoal4, toGoal5, toGoal6,
            (.=.), (./=.), (.<=.), (.>=.), (.>.), (.<.),
            nonvar, ground, anyPrim,
@@ -121,9 +121,9 @@ data Goal dom chr = Goal [CHRconstr dom chr]
 true :: Goal dom chr 
 true = Goal []
 
---- The always failing constraint.
-fail :: Goal dom chr 
-fail = primToGoal Fail
+--- The always unsatisfiable constraint.
+false :: Goal dom chr 
+false = primToGoal Fail
 
 --- Join a list of CHR goals into a single CHR goal (by conjunction).
 andCHR :: [Goal dom chr] -> Goal dom chr
@@ -199,19 +199,19 @@ x .=. y = primToGoal (Eq x y)
 x ./=. y = primToGoal (Neq x y)
 
 --- Primitive less-or-equal constraint.
-(.<=.) :: dom -> dom -> Goal dom chr
+(.<=.) :: Ord dom => dom -> dom -> Goal dom chr
 x .<=. y = primToGoal (Compare (<=) x y)
 
 --- Primitive greater-or-equal constraint.
-(.>=.) :: dom -> dom -> Goal dom chr
+(.>=.) :: Ord dom => dom -> dom -> Goal dom chr
 x .>=. y = primToGoal (Compare (>=) x y)
 
 --- Primitive less-than constraint.
-(.<.) :: dom -> dom -> Goal dom chr
+(.<.) :: Ord dom => dom -> dom -> Goal dom chr
 x .<. y = primToGoal (Compare (<) x y)
 
 --- Primitive greater-than constraint.
-(.>.) :: dom -> dom -> Goal dom chr
+(.>.) :: Ord dom => dom -> dom -> Goal dom chr
 x .>. y = primToGoal (Compare (>) x y)
 
 --- Primitive groundness constraint (useful for guards).
@@ -227,7 +227,7 @@ anyPrim :: (() -> Bool) -> Goal dom chr
 anyPrim cf = primToGoal (AnyPrim cf)
 
 -- Evaluate primitive constraints.
-evalPrimCHR :: PrimConstraint _ -> Bool
+evalPrimCHR :: Eq a => PrimConstraint a -> Bool
 evalPrimCHR (Eq x y)          = x=:=y
 evalPrimCHR (Neq x y)         = (x==y) =:= False
 evalPrimCHR Fail              = failed
@@ -246,7 +246,7 @@ evalPrimCHR (AnyPrim cf)      = cf ()
 --- a constraint solver in Curry. If user-defined CHR constraints remain
 --- after applying all CHR rules, a warning showing the residual
 --- constraints is issued.
-solveCHR :: [[dom] -> CHR dom chr] -> Goal dom chr -> Bool
+solveCHR :: (Eq dom, Show chr) => [[dom] -> CHR dom chr] -> Goal dom chr -> Bool
 solveCHR prules goal =
   let residual = runCHR prules goal
    in if null residual
@@ -263,7 +263,7 @@ solveCHR prules goal =
 -- inHistory     = elem
 type History = SetRBT ([Int],Int) -- entry: constraint indices and rule index
 
-emptyHistory :: SetRBT a
+emptyHistory :: Ord a => SetRBT a
 emptyHistory  = emptySetRBT (<=)
 
 extendHistory :: a -> SetRBT a -> SetRBT a
@@ -276,18 +276,18 @@ inHistory     = elemRBT
 --- Interpret CHR rules (parameterized over domain variables)
 --- for a given CHR goal (second argument) and return the remaining
 --- CHR constraints.
-runCHR :: [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+runCHR :: Eq dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 runCHR prules goal = evalCHR False prules goal
 
 --- Interpret CHR rules (parameterized over domain variables)
 --- for a given CHR goal (second argument) and return the remaining
 --- CHR constraints. Trace also the active and passive constraints
 --- as well as the applied rule number during computation.
-runCHRwithTrace :: [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+runCHRwithTrace :: Eq dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 runCHRwithTrace prules goal = evalCHR True prules goal
 
 -- Interpreter for CHR (refined semantics):
-evalCHR :: Bool -> [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+evalCHR :: Eq dom => Bool -> [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 evalCHR withtrace urules (Goal goal)
    | evalConstr gidx emptyHistory chrgoal [] result
    = map snd result
@@ -448,7 +448,7 @@ compileRules modname chrmodname rids = do
            map (\ (p,a) ->
                   PlDirective
                      [PlLit "chr_constraint"
-                            [PlStruct "/" [PlAtom (showQName p), PlInt a]]])
+                            [PlStruct "/" [PlAtom (showPlName p), PlInt a]]])
                allchrs) ++
         ["","% CHR rules:"] ++ trules ++ ["","% Curry/Prolog interface:"] ++
         map (showPlClause . chrPrologPrimDefinition) allchrs ++
@@ -475,7 +475,7 @@ chrPrologPrimDefinition (qcname,carity) =
   PlClause
     (showCName ("prim_"++snd qcname))
     (map PlVar (map (\i->"X"++show i) [1..carity] ++ ["R"]))
-    [PlLit (showQName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
+    [PlLit (showPlName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
      PlLit "=" [PlVar "R", PlAtom "Prelude.True"]]
 
 
@@ -577,7 +577,7 @@ compileRule getftype chrs (Rule _ rhs) =
    | cname=="nonvar" = (i, [], [PlLit "nonvar" [transArg (args!!0)]])
    | cname=="ground" = (i, [], [PlLit "ground" [transArg (args!!0)]])
    | cname=="true"   = (i, [], [PlLit "true" []])
-   | cname=="fail"   = (i, [], [PlLit "fail" []])
+   | cname=="false"  = (i, [], [PlLit "fail" []])
    | otherwise = maybe (error $ "Illegal CHR constraint: CHR."++cname)
                        (\chr2pl -> (i, [], [chr2pl (map transArg args)]))
                        (lookup cname chrPrims)
@@ -625,34 +625,34 @@ reduceApply exp = case exp of
 chrPrims :: [(String,[PlTerm] -> PlGoal)]
 chrPrims =
  [(".=.", \args -> PlLit "sunif" args),
-  ("./=.",\args -> PlLit "sunif" [PlStruct "Prelude.==" args, pfalse]),
-  (".>=.",\args -> PlLit "sunif" [PlStruct "Prelude.>=" args, ptrue]),
-  (".<=.",\args -> PlLit "sunif" [PlStruct "Prelude.<=" args, ptrue]),
-  (".>.", \args -> PlLit "sunif" [PlStruct "Prelude.>"  args, ptrue]),
-  (".<.", \args -> PlLit "sunif" [PlStruct "Prelude.<"  args, ptrue])]
- where ptrue  = PlAtom "Prelude.True"
-       pfalse = PlAtom "Prelude.False"
+  ("./=.",\args -> PlLit "sunif" [relApply "Prelude.==" args, pfalse]),
+  (".>=.",\args -> PlLit "sunif" [relApply "Prelude.>=" args, ptrue]),
+  (".<=.",\args -> PlLit "sunif" [relApply "Prelude.<=" args, ptrue]),
+  (".>.", \args -> PlLit "sunif" [relApply "Prelude.>"  args, ptrue]),
+  (".<.", \args -> PlLit "sunif" [relApply "Prelude.<"  args, ptrue])]
+ where
+  ptrue  = PlAtom "Prelude.True"
+  pfalse = PlAtom "Prelude.False"
+  relApply rel args = foldl (\f x -> PlStruct "Prelude.apply" [f,x])
+                            (PlStruct rel [head args])
+                            (tail args)
 
 -- Translate an argument of a CHR constraint:
 transArg :: Expr -> PlTerm
 transArg e = case e of
-  Lit (Intc i)   -> PlInt i
-  Lit (Floatc f) -> PlFloat f
-  Var i          -> PlVar ('X' : show i)
-  Comb FuncCall qf args -> PlStruct (showQName qf) (map transArg args)
-  Comb ConsCall qf args -> PlStruct (transCName qf) (map transArg args)
-  _ -> error ("Not yet translatable argument: "++show e)
- where
-  transCName qf | qf == ("Prelude","[]") = "[]"
-                | qf == ("Prelude",":")  = "."
-                | otherwise              = showQName qf
+  Lit (Intc i)          -> PlInt i
+  Lit (Floatc f)        -> PlFloat f
+  Var i                 -> PlVar ('X' : show i)
+  Comb FuncCall qf args -> PlStruct (showPlName qf) (map transArg args)
+  Comb ConsCall qf args -> PlStruct (showPlName qf) (map transArg args)
+  _                     -> error ("Not yet translatable argument: "++show e)
 
 -- Flatten a CHR literal: if arguments contain function calls,
 -- add unification constraints for these arguments.
 flattenLiteral :: Int -> QName -> [Expr] -> (Int,[PlGoal],PlGoal)
 flattenLiteral i qf args =
   let (j,flits,fargs) = flattenArgs i args
-   in (j, flits, PlLit (showQName qf) (map transArg fargs))
+   in (j, flits, PlLit (showPlName qf) (map transArg fargs))
 
 -- Replace non-variable arguments by equalities for new variables.
 -- The first argument and result is a counter for indexing new variables.
@@ -673,11 +673,11 @@ flattenArgs i (arg:args) =
     Comb ConsCall _ cargs -> any funcArg cargs
     _     -> True
 
--- Show a qualified name:
+-- Shows a qualified name:
 showQName :: QName -> String
 showQName (mname,fname) = mname++"."++fname
 
--- Show a name in Curry syntax, i.e., encode special characters as alphanum.
+-- Shows a name in Curry syntax, i.e., encode special characters as alphanum.
 showCName :: String -> String
 showCName s
   | all (\c -> isAlphaNum c || c=='_') s = s
@@ -686,6 +686,22 @@ showCName s
                                         else 'X':show (ord c))
                                  s
   | otherwise = "("++s++")"
+
+-- Shows a qualified name in PAKCS Prolog syntax, i.e.,
+-- encode special characters.
+showPlName :: QName -> String
+showPlName qn@(mn,fn)
+  | qn == ("Prelude","[]") = "[]"
+  | qn == ("Prelude",":")  = "."
+  | all (\c -> isAlphaNum c || c=='_') fn = showQName qn
+  | length fn > 1 && head fn == '_' = mn ++ '.' : concatMap encodeChar fn
+  | otherwise = showQName qn
+ where
+  encodeChar c = if isAlphaNum c || c=='_' || c=='.'
+                   then [c]
+                   else let oc = ord c
+                         in [''', intToDigit (oc `div` 16),
+                                  intToDigit (oc `mod` 16)]
 
 -- The name of the Curry CHR module:
 chrMod :: String
@@ -697,7 +713,7 @@ chrMod = "CHR"
 --- Transforms a primitive CHR constraint into a Curry constraint.
 --- Used in the generated CHR(Prolog) code to evaluated primitive
 --- constraints.
-chr2curry :: CHR.Goal dom chr -> Bool
+chr2curry :: Eq dom => CHR.Goal dom chr -> Bool
 chr2curry (CHR.Goal c) = case c of
   [CHR.PrimCHR pc] -> CHR.evalPrimCHR pc
   _                -> error "CHRcompiled.chr2curry: unexpected argument!"
