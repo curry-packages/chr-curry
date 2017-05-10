@@ -11,8 +11,7 @@
 ---     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" [rule1,rule2]' :q
 ---
 --- @author Michael Hanus
---- @version May 2016
---- @category general
+--- @version May 2017
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
@@ -27,17 +26,19 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
           ) where
 
 import Char
-import Findall           (rewriteSome)
+import Findall           ( rewriteSome )
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
-import FlatCurry.Pretty  (defaultOptions, ppTypeExp)
+import FlatCurry.Pretty  ( defaultOptions, ppTypeExp )
 import List
-import Prolog
-import Pretty            (pretty)
+import Pretty            ( pretty )
 import SetRBT
 import Unsafe -- for tracing
 import XML
+
+import Prolog.Types
+import Prolog.Show       ( showPlClause, showPlGoals )
 
 -------------------------------------------------------------------------------
 -- Operator definitions for writing CHRs:
