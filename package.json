@@ -5,6 +5,7 @@
     "synopsis": "A library to use Constraint Handling Rules in Curry programs",
     "category": [ "Constraints" ],
     "dependencies": {
+        "prolog": ">= 1.0.0"
     },
     "exportedModules": [ "CHR" ],
     "description": "This library an implementation of Constraints Handling
