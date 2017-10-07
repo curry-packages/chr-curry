@@ -6,7 +6,8 @@
     "category": [ "Constraints" ],
     "dependencies": {
         "flatcurry": ">= 1.0.0",
-        "prolog"   : ">= 1.0.0"
+        "prolog"   : ">= 1.0.0",
+        "xml"      : ">= 0.0.1"
     },
     "exportedModules": [ "CHR" ],
     "description": "This library an implementation of Constraints Handling
