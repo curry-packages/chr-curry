@@ -11,7 +11,7 @@ load it, add module `CHR` and interpret or compile the rules
 with `runCHR` or `compileCHR`, respectively. This can be done
 in one shot with
 
-    > cpm curry :l MyRules :add CHR :eval 'compileCHR "MyCHR" [rule1,rule2]' :q
+    > cypm curry :l MyRules :add CHR :eval 'compileCHR "MyCHR" [rule1,rule2]' :q
 
 The directory `examples` contains various CHR(Curry) example programs.
 
