@@ -19,7 +19,7 @@ fi
 
 LOGFILE=xxx$$
 $CURRYBINDIR/cleancurry
-cat << EOM | $CURRYBIN -q :set -interactive :set v0 :set printdepth 0 :set -free :set +verbose :set -time > $LOGFILE
+cat << EOM | $CURRYBIN -q :set -interactive :set v0 :set printdepth 0 :set +verbose :set -time > $LOGFILE
 :load Leq
 main10 x        where x free
 main11 (x::Int) y z    where x,y,z free
