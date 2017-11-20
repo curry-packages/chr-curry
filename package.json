@@ -7,6 +7,7 @@
     "dependencies": {
         "flatcurry": ">= 2.0.0",
         "prolog"   : ">= 1.0.0",
+        "wl-pprint": ">= 0.0.1",
         "xml"      : ">= 2.0.0"
     },
     "exportedModules": [ "CHR" ],

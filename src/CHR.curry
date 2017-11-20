@@ -32,11 +32,11 @@ import FlatCurry.Files
 import FlatCurry.Goodies
 import FlatCurry.Pretty  ( defaultOptions, ppTypeExp )
 import List
-import Pretty            ( pretty )
 import SetRBT
 import Unsafe -- for tracing
 import XML
 
+import Text.Pretty       ( showWidth )
 import Prolog.Types
 import Prolog.Show       ( showPlClause, showPlGoals )
 
@@ -723,6 +723,6 @@ chr2curry (CHR.Goal c) = case c of
 
 -- Use FlatCurry pretty printer to show a non-top-level type expression.
 showCurryType :: TypeExpr -> String
-showCurryType te = '(' : pretty 78 (ppTypeExp defaultOptions te) ++ ")"
+showCurryType te = '(' : showWidth 78 (ppTypeExp defaultOptions te) ++ ")"
 
 ----------------------------------------------------------------------
