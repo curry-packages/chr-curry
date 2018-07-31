@@ -25,17 +25,17 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            compileCHR, chr2curry
           ) where
 
-import Char
+import Data.Char
+import Data.List
+import qualified Data.Set.RBTree as RBT
+import System.IO.Unsafe as Unsafe -- for tracing
 import Findall           ( rewriteSome )
+
+import XML
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
 import FlatCurry.Pretty  ( defaultOptions, ppTypeExp )
-import List
-import SetRBT
-import Unsafe -- for tracing
-import XML
-
 import Text.Pretty       ( showWidth )
 import Prolog.Types
 import Prolog.Show       ( showPlClause, showPlGoals )
@@ -115,15 +115,15 @@ data CHRconstr dom chr = PrimCHR (PrimConstraint dom) | UserCHR chr
 data Goal dom chr = Goal [CHRconstr dom chr]
 
 --- Conjunction of CHR goals.
-(/\) :: Goal dom chr -> Goal dom chr -> Goal dom chr 
+(/\) :: Goal dom chr -> Goal dom chr -> Goal dom chr
 (/\) (Goal c1) (Goal c2) = Goal (c1 ++ c2)
 
 --- The always satisfiable CHR constraint.
-true :: Goal dom chr 
+true :: Goal dom chr
 true = Goal []
 
 --- The always unsatisfiable constraint.
-false :: Goal dom chr 
+false :: Goal dom chr
 false = primToGoal Fail
 
 --- Join a list of CHR goals into a single CHR goal (by conjunction).
@@ -262,16 +262,16 @@ solveCHR prules goal =
 -- emptyHistory  = []
 -- extendHistory = (:)
 -- inHistory     = elem
-type History = SetRBT ([Int],Int) -- entry: constraint indices and rule index
+type History = RBT.SetRBT ([Int],Int) -- entry: constraint indices and rule index
 
-emptyHistory :: Ord a => SetRBT a
-emptyHistory  = emptySetRBT (<=)
+emptyHistory :: Ord a => RBT.SetRBT a
+emptyHistory  = RBT.empty
 
-extendHistory :: a -> SetRBT a -> SetRBT a
-extendHistory = insertRBT
+extendHistory :: Ord a => a -> RBT.SetRBT a -> RBT.SetRBT a
+extendHistory = RBT.insert
 
-inHistory :: a -> SetRBT a -> Bool
-inHistory     = elemRBT
+inHistory :: Ord a => a -> RBT.SetRBT a -> Bool
+inHistory     = RBT.member
 
 ------------------------------------------------------------------------
 --- Interpret CHR rules (parameterized over domain variables)
@@ -470,7 +470,7 @@ getFuncType fdecls qfname =
   maybe (error $ showQName qfname ++ " not found!")
         funcType
         (find (\ (Func qf _ _ _ _) -> qf == qfname) fdecls)
-  
+
 chrPrologPrimDefinition :: (QName,Int) -> PlClause
 chrPrologPrimDefinition (qcname,carity) =
   PlClause

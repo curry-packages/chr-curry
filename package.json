@@ -1,14 +1,14 @@
 {
     "name": "chr-curry",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "A library to use Constraint Handling Rules in Curry programs",
     "category": [ "Constraints" ],
     "dependencies": {
-        "flatcurry": ">= 2.0.0",
-        "prolog"   : ">= 1.0.0",
-        "wl-pprint": ">= 0.0.1",
-        "xml"      : ">= 2.0.0"
+        "flatcurry": ">= 3.0.0",
+        "prolog"   : ">= 2.0.0",
+        "wl-pprint": ">= 2.0.0",
+        "xml"      : ">= 3.0.0"
     },
     "exportedModules": [ "CHR" ],
     "description": "This library an implementation of Constraints Handling
