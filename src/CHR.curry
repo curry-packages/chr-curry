@@ -265,7 +265,7 @@ solveCHR prules goal =
 type History = SetRBT ([Int],Int) -- entry: constraint indices and rule index
 
 emptyHistory :: Ord a => SetRBT a
-emptyHistory = empty
+emptyHistory = empty (<=)
 
 extendHistory :: Ord a => a -> SetRBT a -> SetRBT a
 extendHistory = insert
