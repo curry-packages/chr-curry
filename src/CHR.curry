@@ -32,13 +32,13 @@ import FlatCurry.Files
 import FlatCurry.Goodies
 import FlatCurry.Pretty  ( defaultOptions, ppTypeExp )
 import List
-import SetRBT
 import Unsafe -- for tracing
 import XML
 
-import Text.Pretty       ( showWidth )
+import Data.Set.RBTree   ( SetRBT, member, empty, insert )
 import Prolog.Types
 import Prolog.Show       ( showPlClause, showPlGoals )
+import Text.Pretty       ( showWidth )
 
 -------------------------------------------------------------------------------
 -- Operator definitions for writing CHRs:
@@ -265,13 +265,13 @@ solveCHR prules goal =
 type History = SetRBT ([Int],Int) -- entry: constraint indices and rule index
 
 emptyHistory :: Ord a => SetRBT a
-emptyHistory  = emptySetRBT (<=)
+emptyHistory = empty
 
-extendHistory :: a -> SetRBT a -> SetRBT a
-extendHistory = insertRBT
+extendHistory :: Ord a => a -> SetRBT a -> SetRBT a
+extendHistory = insert
 
-inHistory :: a -> SetRBT a -> Bool
-inHistory     = elemRBT
+inHistory :: Ord a => a -> SetRBT a -> Bool
+inHistory = member
 
 ------------------------------------------------------------------------
 --- Interpret CHR rules (parameterized over domain variables)
