@@ -14,8 +14,7 @@
         "xml"          : ">= 2.0.0"
     },
     "exportedModules": [ "CHR" ],
-    "description": "This library an implementation of Constraints Handling
-                    Rules in Curry.",
+    "description": "This package provides an implementation of Constraint Handling Rules in Curry.",
     "compilerCompatibility": {
         "pakcs": ">= 2.2.1, < 3.0.0"
     },
