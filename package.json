@@ -1,11 +1,11 @@
 {
     "name": "chr-curry",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "A library to use Constraint Handling Rules in Curry programs",
     "category": [ "Constraints" ],
     "dependencies": {
-        "base"         : ">= 1.0.0, < 2.0.0",
+        "base"         : ">= 1.1.0, < 2.0.0",
         "flatcurry"    : ">= 2.0.0",
         "prolog"       : ">= 1.0.0",
         "redblacktree" : ">= 0.0.1",
@@ -17,7 +17,7 @@
     "description": "This library an implementation of Constraints Handling
                     Rules in Curry.",
     "compilerCompatibility": {
-        "pakcs": ">= 2.0.0"
+        "pakcs": ">= 2.2.1, < 3.0.0"
     },
     "license": "BSD-3-Clause",
     "licenseFile": "LICENSE",
