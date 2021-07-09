@@ -2,7 +2,7 @@
 --- CHR(Curry): use CHR to compute the greatest common divisor
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-missing-signatures #-}
@@ -28,5 +28,5 @@ main30 = runGCD $ gcd 16 /\ gcd 28  --> gcd 4
 main31 = runGCD $ gcd 206 /\ gcd 40 --> gcd 2
 
 ----------------------------------------------------------------------
-compileGCD = compileCHR "GCDCHR" [gcda,gcd2]
+compileGCD = compileCHR "GCDCHR" "GCD" [gcda,gcd2]
 -- solveCHR $ gcdanswer x /\ gcd 206 /\ gcd 40  where x free

@@ -2,7 +2,7 @@
 --- CHR(Curry): the classical Leq example
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-missing-signatures #-}
@@ -30,4 +30,4 @@ main11 x y z    = runLEQ $ leq x y /\ leq y z /\ leq z x
 main12 x y z z' = runLEQ $ leq x y /\ leq z z'
 
 compileLeq =
-  compileCHR "LEQCHR" [reflexivity,antisymmetry,idempotence,transitivity]
+  compileCHR "LEQCHR" "Leq" [reflexivity,antisymmetry,idempotence,transitivity]

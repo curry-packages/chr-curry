@@ -2,83 +2,114 @@
 # Shell script to test the current set of CHR(Curry) examples
 
 # Root location of the Curry System specified by variable CURRYROOT
-CURRYROOT=`$CURRYBIN :set v0 :set -time :add Distribution :eval "putStrLn installDir" :quit`
+CURRYROOT=`$CURRYBIN :set v0 :set -time :add Curry.Compiler.Distribution :eval "putStrLn installDir" :quit`
 CURRYBINDIR=$CURRYROOT/bin
 
-BACKEND=`$CURRYBIN --noreadline :set v0 :set -time :load Distribution :eval "putStrLn (curryRuntime ++ show curryRuntimeMajorVersion)" :quit 2> /dev/null`
+BACKEND=`$CURRYBIN --noreadline :set v0 :set -time :load Curry.Compiler.Distribution :eval "putStrLn (curryRuntime ++ show curryRuntimeMajorVersion)" :quit 2> /dev/null`
 
 VERBOSE=no
 if [ "$1" = "-v" ] ; then
   VERBOSE=yes
 fi
 
-if [ "$BACKEND" != sicstus4 -a "$BACKEND" != swi6 -a "$BACKEND" != swi7 ] ; then
+if [ "$BACKEND" != sicstus4 -a "$BACKEND" != swi6 -a "$BACKEND" != swi7 -a "$BACKEND" != swi8 ] ; then
   echo "No appropriate Prolog back end, skip the CHR tests."
   exit
 fi
 
 LOGFILE=xxx$$
 $CURRYBINDIR/cleancurry
-cat << EOM | $CURRYBIN -q :set -interactive :set v0 :set printdepth 0 :set +verbose :set -time > $LOGFILE
+cat << EOM | $CURRYBIN -q :set -interactive :set v0 :set printdepth 0 :set -time | tee $LOGFILE
+:!echo Loading program Leq
 :load Leq
+:!echo main10
 main10 x        where x free
+:!echo main11
 main11 (x::Int) y z    where x,y,z free
+:!echo main12
 main12 (x::Int) y z z' where x,y,z,z' free
 
+:!echo Loading program Bool
 :load Bool
+:!echo main20
 main20 x y z    where x,y,z free
+:!echo main21
 main21 a b s c  where a,b,s,c free
+:!echo main22
 main22 a b s c  where a,b,s,c free
 
+:!echo Loading program GCD
 :load GCD
-:add CHR
-runGCD $ gcd 16 /\ gcd 28
-runGCD $ gcd 206 /\ gcd 40
-compileCHR "GCDCHR"   [gcda,gcd2]
+:!echo main30
+main30
+:!echo main31
+main31
+compileGCD
+:!echo Loading program GCDCHR
 :load GCDCHR
+:!echo solveCHR $ gcdanswer x /\ gcd 206 /\ gcd 40  where x free
 solveCHR $ gcdanswer x /\ gcd 206 /\ gcd 40  where x free
 
+:!echo Loading program Fib
 :load Fib
-:add CHR
-runCHR [dup,fib1,fibn,addrule] $ fib 7 x    where x free
-compileCHR "FIBCHR"   [fibo1,fibo2,fibo3,addrule]
+:!echo main41
+main41 x    where x free
+compileFib
+:!echo Loading program FIBCHR
 :load FIBCHR
+:!echo solveCHR $ fib 20 x  where x free
 solveCHR $ fib 20 x  where x free
 
+:!echo Loading program FD
 :load FD
+:!echo main50
 main50 x y      where x,y free
+:!echo main51
 main51 x        where x free
+:!echo main52
 main52 [x,y,z]  where x,y,z free
+:!echo main53
 main53 xs       where xs free
+:!echo main55
 main55 xs       where xs free
 
+:!echo Loading program UnionFind
 :load UnionFind
+:!echo main60
 main60
+:!echo main61
 main61 x        where x free
+:!echo main62
 main62 x y      where x,y free
+:!echo main63
 main63
+:!echo main64
 main64 x y      where x,y free
+:!echo main65
 main65 x y      where x,y free
-:add CHR
-compileCHR "UFCHR"    [makeI,unionI,findNode,findRoot,linkEq,linkTo]
+compileUF
+:!echo Loading program UFCHR
 :load UFCHR
+:!echo solveCHR $ andCHR [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]  where x,y free
 solveCHR $ andCHR [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]  where x,y free
 
+:!echo Loading program Primes
 :load Primes
-runPrime $ prime 20
+:!echo main70
+main70
 
+:!echo Loading program Gauss
 :load Gauss
+:!echo main80
 main80 x y      where x,y free
+:!echo main81
 main81 x y      where x,y free
+:!echo main82
 main82 x y      where x,y free
+:!echo main85
 main85 i        where i free
+:!echo main86
 main86 i        where i free
-:add CHR
-compileCHR "GAUSSCHR" [arithrule,emptyP,constM,eliminate,bindVar]
-:load GAUSSCHR
-:add Gauss
--- omitted due to compilation problems:
--- solveCHR $ 3.0:*:x GAUSSCHR.:=: 6.0 /\ 2.0:*:x :+: 6.0:*:y GAUSSCHR.:=: 10.0  where x,y free
 
 EOM
 # clean up:

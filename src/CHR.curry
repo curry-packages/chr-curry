@@ -8,10 +8,10 @@
 --- with `runCHR` or `compileCHR`, respectively. This can be done
 --- in one shot with
 ---
----     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" [rule1,rule2]' :q
+---     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" "MyRules" [rule1,rule2]' :q
 ---
 --- @author Michael Hanus
---- @version December 2018
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
@@ -25,19 +25,20 @@ module CHR(CHR,Goal,(/\), (<=>), (==>), (|>), (\\),
            compileCHR, chr2curry
           ) where
 
-import Char
-import List
-import Unsafe -- for tracing
+import Prelude hiding ( empty )
+import Data.Char
+import Data.List
+import System.IO.Unsafe -- for tracing
 
 import Control.Findall   ( rewriteSome )
 import Data.Set.RBTree   ( SetRBT, member, empty, insert )
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
-import FlatCurry.Pretty  ( defaultOptions, ppTypeExp )
-import Prolog.Types
-import Prolog.Show       ( showPlClause, showPlGoals )
-import Text.Pretty       ( showWidth )
+import FlatCurry.Pretty      ( defaultOptions, ppTypeExp )
+import Language.Prolog.Types
+import Language.Prolog.Show  ( showPlClause, showPlGoals )
+import Text.Pretty           ( showWidth )
 import XML
 
 -------------------------------------------------------------------------------
@@ -63,26 +64,26 @@ data CHR dom chr =
 (<=>) :: Goal dom chr -> Goal dom chr -> CHR dom chr
 g1 <=> g2 =
   if null (primsOfGoal g1)
-  then SimplRule (uchrOfGoal g1) [] g2
-  else error "Rule with primitive constraint on the left-hand side!"
+    then SimplRule (uchrOfGoal g1) [] g2
+    else error "Rule with primitive constraint on the left-hand side!"
 
 --- Propagation rule.
 (==>) :: Goal dom chr -> Goal dom chr -> CHR dom chr
 g1 ==> g2 =
   if null (primsOfGoal g1)
-  then PropaRule (uchrOfGoal g1) [] g2
-  else error "Rule with primitive constraint on the left-hand side!"
+    then PropaRule (uchrOfGoal g1) [] g2
+    else error "Rule with primitive constraint on the left-hand side!"
 
 --- Simpagation rule: if rule is applicable, the first constraint is kept
 --- and the second constraint is deleted.
 (\\) :: Goal dom chr -> CHR dom chr -> CHR dom chr
 g1 \\ (SimplRule lchrs guard rcs)
   | not (null (primsOfGoal g1))
-   = error "Simpagation rule with primitive kept constraints!"
+  = error "Simpagation rule with primitive kept constraints!"
   | null keptcs -- to omit trivial uses of simpagation rule
-   = SimplRule lchrs guard rcs
+  = SimplRule lchrs guard rcs
   | null lchrs -- to omit trivial uses of simpagation rule
-   = PropaRule keptcs guard rcs
+  = PropaRule keptcs guard rcs
   | otherwise = SimpaRule keptcs lchrs guard rcs
  where
   keptcs = uchrOfGoal g1
@@ -93,16 +94,16 @@ rule |> g3 = attachGuard rule
  where
   attachGuard (SimplRule lcs guard rcs) =
     if null (uchrOfGoal rcs)
-    then SimplRule lcs (guard ++ primsOfGoal rcs) g3
-    else error "Rule contains a guard with non-primitive constraints!"
+      then SimplRule lcs (guard ++ primsOfGoal rcs) g3
+      else error "Rule contains a guard with non-primitive constraints!"
   attachGuard (PropaRule lcs guard rcs) =
     if null (uchrOfGoal rcs)
-    then PropaRule lcs (guard ++ primsOfGoal rcs) g3
-    else error "Rule contains a guard with non-primitive constraints!"
+      then PropaRule lcs (guard ++ primsOfGoal rcs) g3
+      else error "Rule contains a guard with non-primitive constraints!"
   attachGuard (SimpaRule h1 h2 guard rcs) =
     if null (uchrOfGoal rcs)
-    then SimpaRule h1 h2 (guard ++ primsOfGoal rcs) g3
-    else error "Rule contains a guard with non-primitive constraints!"
+      then SimpaRule h1 h2 (guard ++ primsOfGoal rcs) g3
+      else error "Rule contains a guard with non-primitive constraints!"
 
 
 ------------------------------------------------------------------------------
@@ -228,13 +229,13 @@ anyPrim :: (() -> Bool) -> Goal dom chr
 anyPrim cf = primToGoal (AnyPrim cf)
 
 -- Evaluate primitive constraints.
-evalPrimCHR :: Eq a => PrimConstraint a -> Bool
+evalPrimCHR :: (Data a, Eq a) => PrimConstraint a -> Bool
 evalPrimCHR (Eq x y)          = x=:=y
 evalPrimCHR (Neq x y)         = (x==y) =:= False
 evalPrimCHR Fail              = failed
 evalPrimCHR (Compare cmp x y) = (cmp x y) =:= True
-evalPrimCHR (Nonvar x)        = Unsafe.isVar x =:= False
-evalPrimCHR (Ground x)        = Unsafe.isGround x =:= True
+evalPrimCHR (Nonvar x)        = System.IO.Unsafe.isVar x =:= False
+evalPrimCHR (Ground x)        = System.IO.Unsafe.isGround x =:= True
 evalPrimCHR (AnyPrim cf)      = cf ()
 
 
@@ -247,13 +248,14 @@ evalPrimCHR (AnyPrim cf)      = cf ()
 --- a constraint solver in Curry. If user-defined CHR constraints remain
 --- after applying all CHR rules, a warning showing the residual
 --- constraints is issued.
-solveCHR :: (Eq dom, Show chr) => [[dom] -> CHR dom chr] -> Goal dom chr -> Bool
+solveCHR :: (Data dom, Data chr, Eq dom, Show chr) =>
+            [[dom] -> CHR dom chr] -> Goal dom chr -> Bool
 solveCHR prules goal =
   let residual = runCHR prules goal
-   in if null residual
-      then True
-      else trace ("WARNING: residual CHR constraints: "++show residual++"\n")
-                 True
+  in if null residual
+       then True
+       else trace ("WARNING: residual CHR constraints: "++show residual++"\n")
+                  True
 
 ------------------------------------------------------------------------
 -- The structure and operations for the history of the interpreter.
@@ -277,18 +279,21 @@ inHistory = member
 --- Interpret CHR rules (parameterized over domain variables)
 --- for a given CHR goal (second argument) and return the remaining
 --- CHR constraints.
-runCHR :: Eq dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+runCHR :: (Data dom, Data chr, Eq dom) =>
+          [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 runCHR prules goal = evalCHR False prules goal
 
 --- Interpret CHR rules (parameterized over domain variables)
 --- for a given CHR goal (second argument) and return the remaining
 --- CHR constraints. Trace also the active and passive constraints
 --- as well as the applied rule number during computation.
-runCHRwithTrace :: Eq dom => [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+runCHRwithTrace :: (Data dom, Data chr, Eq dom) =>
+                   [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 runCHRwithTrace prules goal = evalCHR True prules goal
 
 -- Interpreter for CHR (refined semantics):
-evalCHR :: Eq dom => Bool -> [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
+evalCHR :: (Data dom, Data chr, Eq dom) =>
+           Bool -> [[dom] -> CHR dom chr] -> Goal dom chr -> [chr]
 evalCHR withtrace urules (Goal goal)
    | evalConstr gidx emptyHistory chrgoal [] result
    = map snd result
@@ -365,7 +370,7 @@ evalCHR withtrace urules (Goal goal)
 -- Auxiliary operations:
 
 -- Find a list of elements in another list and return the remaining ones:
-findDelete :: [a] -> [(Int,a)] -> ([(Int,a)],[(Int,a)])
+findDelete :: Data a => [a] -> [(Int,a)] -> ([(Int,a)],[(Int,a)])
 findDelete []     cs = ([],cs)
 findDelete (x:xs) cs = let (z,ds) = del x cs
                            (zs,es) = findDelete xs ds
@@ -374,7 +379,7 @@ findDelete (x:xs) cs = let (z,ds) = del x cs
   del e (z:zs) | e=:=snd z = (z,zs)
   del e (z:zs) = let (y,ys) = del e zs in (y, z:ys)
 
-deleteSome :: a -> [a] -> [a]
+deleteSome :: Data a => a -> [a] -> [a]
 deleteSome e (z:zs) | e=:=z = zs
 deleteSome e (z:zs) = z : deleteSome e zs
 
@@ -404,63 +409,58 @@ numberCHR i (UserCHR c : cs) =
 
 --- Compile a list of CHR(Curry) rules into CHR(Prolog) and store its interface
 --- in a Curry program (name given as first argument).
-compileCHR :: String -> [[dom] -> CHR dom chr] -> IO ()
-compileCHR currymod rules
+--- The second argument is the name of the module containing the
+--- CHR(Curry) rules.
+compileCHR :: String -> String -> [[dom] -> CHR dom chr] -> IO ()
+compileCHR currymod sourcemodname rules
   | null rids = putStrLn "No CHR rules to compile."
-  | any (/=sourcemodname) (map fst rids)
-    = error "Cannot compile CHR rules from different modules!"
-  | otherwise = compileRules sourcemodname currymod (map snd rids)
+  | otherwise = compileRules sourcemodname currymod rids
  where
   rids = map ruleId rules
-  sourcemodname = fst (head rids)
 
--- extract the qualified name of a rule:
-ruleId :: ([dom] -> CHR dom chr) -> QName
+-- extract the name of a rule:
+ruleId :: ([dom] -> CHR dom chr) -> String
 ruleId rule =
-  let rcallstring = showAnyQExpression rule -- "(partcall 1 qid [])"
-      qid = takeWhile (not . isSpace) (drop (length "(partcall 1 ") rcallstring)
-      (mname,rname) = break (=='.') qid
-   in (mname, tail rname)
+  let rcallstring = showAnyExpression rule -- "(partcall 1 funid [])"
+  in takeWhile (not . isSpace) (drop (length "(partcall 1 ") rcallstring)
+
+-- Rename the identifiers of CHR rules (first argument) to avoid name conflicts
+-- with the standard compiled rules.
+rnmCHR :: String -> [QName] -> QName -> QName
+rnmCHR chrmodname allchrids qn@(_,fn)
+  | qn `elem` allchrids = (chrmodname, fn ++ "$CHR")
+  | otherwise           = qn
 
 -- compile all specifed CHR rules to CHR(Prolog):
 compileRules :: String -> String -> [String] -> IO ()
 compileRules modname chrmodname rids = do
   (Prog _ _ _ fdecls opdecls) <- readFlatCurry modname
-  let pmodname = chrmodname++"_prim"
-      getftype = getFuncType fdecls
+  let getftype = getFuncType fdecls
       rdefs = filter (\ (Func fname _ _ _ _) -> snd fname `elem` rids) fdecls
-      (chrs,_) = unzip (map (compileRule getftype []) (map funcRule rdefs))
+      (chrs,_) = unzip (map (compileRule getftype id []) (map funcRule rdefs))
       allchrs = nub (concat chrs)
-      (_,trules) = unzip (map (compileRule getftype allchrs)
-                         (map funcRule rdefs))
+      rnmchr = rnmCHR chrmodname (map fst allchrs)
+      (_,trules) = unzip (map (compileRule getftype rnmchr allchrs)
+                              (map funcRule rdefs))
       allchrtypes = zip allchrs (map getftype (map fst allchrs))
       curryprog = showCHRModule modname chrmodname opdecls allchrtypes
       prologprog = unlines $
         map showPlClause
-          ([PlDirective
-             [PlLit "module"
-               [PlAtom pmodname,
-                plList (map (\ (qcname,carity)->
-                         PlStruct "/" [PlAtom (showCName ("prim_"++snd qcname)),
-                                       PlInt (carity+1)])
-                            allchrs)]],
-            PlDirective [PlLit "use_module"
+          ([PlDirective [PlLit "use_module"
                                [PlStruct "library" [PlAtom "chr"]]]] ++
            map (\ (p,a) ->
                   PlDirective
                      [PlLit "chr_constraint"
-                            [PlStruct "/" [PlAtom (showPlName p), PlInt a]]])
+                            [PlStruct "/" [PlAtom (showPlName (rnmchr p)),
+                                           PlInt a]]])
                allchrs) ++
         ["","% CHR rules:"] ++ trules ++ ["","% Curry/Prolog interface:"] ++
-        map (showPlClause . chrPrologPrimDefinition) allchrs ++
+        map (showPlClause . chrPrologPrimDefinition chrmodname rnmchr) allchrs ++
         ["","% Auxiliary predicates:",
-         "sunif(X,Y) :- user:evalToken(E), user:hnf('Prelude.=:='(X,Y),_,E,_).",
+         "sunif(X,Y) :- user:evalToken(E), user:hnf('Prelude.constrEq'(X,Y),_,E,_).",
          "eval(X) :- user:evalToken(E), user:hnf(X,_,E,_)."]
-  writeFile (chrmodname++".curry") curryprog
-  writeXmlFileWithParams (chrmodname++".prim_c2p")
-          [DtdUrl "http://www.informatik.uni-kiel.de/~pakcs/primitives.dtd"]
-          (constraints2xml pmodname allchrs)
-  writeFile (pmodname++".pl") prologprog
+  writeFile (chrmodname ++ ".curry") curryprog
+  writeFile (chrmodname ++ ".pakcs.pl") prologprog
   --putStrLn curryprog
   --putStrLn prologprog
   putStrLn $ "Curry interface to CHR(Prolog) written to "++chrmodname++".curry"
@@ -468,15 +468,19 @@ compileRules modname chrmodname rids = do
 getFuncType :: [FuncDecl] -> (String,String) -> TypeExpr
 getFuncType fdecls qfname =
   maybe (error $ showQName qfname ++ " not found!")
-        funcType
+        (stripForall . funcType)
         (find (\ (Func qf _ _ _ _) -> qf == qfname) fdecls)
-  
-chrPrologPrimDefinition :: (QName,Int) -> PlClause
-chrPrologPrimDefinition (qcname,carity) =
+ where
+  stripForall te = case te of ForallType _ t -> t
+                              _              -> te
+
+chrPrologPrimDefinition :: String -> (QName -> QName) -> (QName,Int) -> PlClause
+chrPrologPrimDefinition chrmodname rnmchr (qcname,carity) =
   PlClause
-    (showCName ("prim_"++snd qcname))
+    (chrmodname ++ "." ++ showCName ("prim_"++snd qcname))
     (map PlVar (map (\i->"X"++show i) [1..carity] ++ ["R"]))
-    [PlLit (showPlName qcname) (map (\i->PlVar ("X"++show i)) [1..carity]),
+    [PlLit (showPlName (rnmchr qcname))
+           (map (\i -> PlVar ("X" ++ show i)) [1 .. carity]),
      PlLit "=" [PlVar "R", PlAtom "Prelude.True"]]
 
 
@@ -543,30 +547,32 @@ constraints2xml prologmod constraints =
             xml "entry" [xtxt (showCName ("prim_"++cname))]]
 
 -- compile a single CHR rule:
-compileRule :: (QName -> TypeExpr) -> [(QName,Int)] -> Rule
+compileRule :: (QName -> TypeExpr) -> (QName -> QName) -> [(QName,Int)] -> Rule
             -> ([(QName,Int)],String)
-compileRule getftype chrs (Rule _ rhs) =
+compileRule _ _ _ (External _) = error "CHR.compileRule: external rule"
+compileRule getftype rnmchr chrs (Rule _ rhs) =
   let (_,rchrs,trule) = exp2CHR 100 (firstBranch rhs)
    in (rchrs, trule ++ ".")
  where
-  exp2CHR i exp@(Comb FuncCall qf [a1,a2])
-    | qf == (chrMod,"<=>")  = let (j, chrs1,tgoal1) = transGoal i a1
-                                  (k,_,tgoal2) = transGoal j a2
-                               in (k, chrs1, sg tgoal1 ++" <=> "++ sg tgoal2)
-    | qf == (chrMod,"==>")  = let (j,chrs1,tgoal1) = transGoal i a1
-                                  (k,_,tgoal2) = transGoal j a2
-                               in (k, chrs1, sg tgoal1 ++" ==> "++ sg tgoal2)
-    | qf == (chrMod,"\\\\") = let (j,chrs1,tgoal1) = transGoal i a1
-                                  (k,chrs2,trule2) = exp2CHR j a2
-                               in (k, chrs1++chrs2, sg tgoal1 ++" \\ "++ trule2)
-    | qf == (chrMod,"|>")   = let (j,chrs1,trule1) = exp2CHR i a1
-                                  (k,_,tgoal2) = transGoal j a2
-                               in (k, chrs1, trule1 ++" | "++ sg tgoal2)
-    | otherwise = error ("Cannot translate CHR rule: " ++ show exp)
+  exp2CHR i exp = case exp of
+    Comb FuncCall qf [a1,a2]
+     | qf == (chrMod,"<=>")  -> let (j, chrs1,tgoal1) = transGoal i a1
+                                    (k,_,tgoal2) = transGoal j a2
+                                in (k, chrs1, sg tgoal1 ++" <=> "++ sg tgoal2)
+     | qf == (chrMod,"==>")  -> let (j,chrs1,tgoal1) = transGoal i a1
+                                    (k,_,tgoal2) = transGoal j a2
+                                in (k, chrs1, sg tgoal1 ++" ==> "++ sg tgoal2)
+     | qf == (chrMod,"\\\\") -> let (j,chrs1,tgoal1) = transGoal i a1
+                                    (k,chrs2,trule2) = exp2CHR j a2
+                                in (k, chrs1++chrs2, sg tgoal1 ++" \\ "++ trule2)
+     | qf == (chrMod,"|>")   -> let (j,chrs1,trule1) = exp2CHR i a1
+                                    (k,_,tgoal2) = transGoal j a2
+                                in (k, chrs1, trule1 ++" | "++ sg tgoal2)
+    _ -> error ("Cannot translate CHR rule: " ++ show exp)
    where sg = showPlGoals
 
   transGoal i exp = case reduceApply exp of
-    Comb FuncCall qf args -> if fst qf == chrMod then transCHRPred i qf args
+    Comb FuncCall qf args -> if fst qf == chrMod then transCHRPred  i qf args
                                                  else transUserPred i qf args
     _ -> error ("Cannot translate CHR literal: " ++ show exp)
 
@@ -584,16 +590,16 @@ compileRule getftype chrs (Rule _ rhs) =
                        (lookup cname chrPrims)
 
   transUserPred i qf args =
-    let (j,plits,plit) = flattenLiteral i qf args
+    let (j,plits,plit) = flattenLiteral i (rnmchr qf) args
         fplit = if qf `elem` map fst chrs
-                then plit
-                else if isCHRType (getftype qf)
-                     then let PlLit pn pargs = plit
-                           in PlLit "eval" [PlStruct "CHR.chr2curry"
-                                                     [PlStruct pn pargs]]
-                     else error ("Operation '"++snd qf++
-                                 "' is not a CHR constraint!")
-     in (j, [(qf,length args)], plits ++ [fplit])
+                  then plit
+                  else if isCHRType (getftype qf)
+                         then let PlLit pn pargs = plit
+                              in PlLit "eval" [PlStruct "CHR.chr2curry"
+                                                        [PlStruct pn pargs]]
+                         else error ("Operation '"++snd qf++
+                                     "' is not a CHR constraint!")
+     in (j, [(qf, length args)], plits ++ [fplit])
 
 -- check whether the type is a type of a CHR constraint
 isCHRType :: TypeExpr -> Bool
@@ -625,12 +631,12 @@ reduceApply exp = case exp of
 -- Translation table for primitive CHR constraints:
 chrPrims :: [(String,[PlTerm] -> PlGoal)]
 chrPrims =
- [(".=.", \args -> PlLit "sunif" args),
-  ("./=.",\args -> PlLit "sunif" [relApply "Prelude.==" args, pfalse]),
-  (".>=.",\args -> PlLit "sunif" [relApply "Prelude.>=" args, ptrue]),
-  (".<=.",\args -> PlLit "sunif" [relApply "Prelude.<=" args, ptrue]),
-  (".>.", \args -> PlLit "sunif" [relApply "Prelude.>"  args, ptrue]),
-  (".<.", \args -> PlLit "sunif" [relApply "Prelude.<"  args, ptrue])]
+ [(".=." , \args -> PlLit "sunif" args),
+  ("./=.", \args -> PlLit "sunif" [relApply "Prelude.==" args, pfalse]),
+  (".>=.", \args -> PlLit "sunif" [relApply "Prelude.>=" args, ptrue]),
+  (".<=.", \args -> PlLit "sunif" [relApply "Prelude.<=" args, ptrue]),
+  (".>.",  \args -> PlLit "sunif" [relApply "Prelude.>"  args, ptrue]),
+  (".<.",  \args -> PlLit "sunif" [relApply "Prelude.<"  args, ptrue])]
  where
   ptrue  = PlAtom "Prelude.True"
   pfalse = PlAtom "Prelude.False"
@@ -638,15 +644,32 @@ chrPrims =
                             (PlStruct rel [head args])
                             (tail args)
 
--- Translate an argument of a CHR constraint:
+-- Translates an argument list of a CHR constraint and try to remove
+-- partial calls.
+transArgs :: [Expr] -> [PlTerm]
+transArgs [] = []
+transArgs (e:es) = case e of
+  Comb (FuncPartCall 1) qn [] -> case es of
+    []     -> [transArg e]
+    e1:e1s -> transArgs (Comb FuncCall qn [e1] : e1s)
+  _                           -> transArg e : transArgs es
+
+-- Translates an argument of a CHR constraint.
 transArg :: Expr -> PlTerm
 transArg e = case e of
-  Lit (Intc i)          -> PlInt i
-  Lit (Floatc f)        -> PlFloat f
-  Var i                 -> PlVar ('X' : show i)
-  Comb FuncCall qf args -> PlStruct (showPlName qf) (map transArg args)
-  Comb ConsCall qf args -> PlStruct (showPlName qf) (map transArg args)
-  _                     -> error ("Not yet translatable argument: "++show e)
+  Lit (Intc i)    -> PlInt i
+  Lit (Floatc f)  -> PlFloat f
+  Var i           -> PlVar ('X' : show i)
+  Comb ct qf args -> case ct of
+    FuncCall       -> PlStruct (showPlName qf) (map transArg args)
+    ConsCall       -> PlStruct (showPlName qf) (map transArg args)
+    FuncPartCall m -> genPartCall m qf args
+    ConsPartCall m -> genPartCall m qf args
+  _                     -> error $ "Not yet translatable argument: " ++ show e
+ where
+  genPartCall m qf args =
+    PlStruct "partcall" [PlInt m, PlStruct (showPlName qf) [],
+                         plList (map transArg args)]
 
 -- Flatten a CHR literal: if arguments contain function calls,
 -- add unification constraints for these arguments.
@@ -714,7 +737,7 @@ chrMod = "CHR"
 --- Transforms a primitive CHR constraint into a Curry constraint.
 --- Used in the generated CHR(Prolog) code to evaluated primitive
 --- constraints.
-chr2curry :: Eq dom => CHR.Goal dom chr -> Bool
+chr2curry :: (Data dom, Eq dom) => CHR.Goal dom chr -> Bool
 chr2curry (CHR.Goal c) = case c of
   [CHR.PrimCHR pc] -> CHR.evalPrimCHR pc
   _                -> error "CHRcompiled.chr2curry: unexpected argument!"

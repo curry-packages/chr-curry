@@ -2,7 +2,7 @@
 --- CHR(Curry): using CHR to compute Fibonacci numbers with tabling
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-missing-signatures #-}
@@ -38,5 +38,5 @@ runFib2 = runCHR [dup,fib1,fibn,addrule]
 
 main41 x = runFib2 $ fib 7 x  --> x=21
 
-compileFib = compileCHR "FIBCHR" [fibo1,fibo2,fibo3,addrule]
+compileFib = compileCHR "FIBCHR" "Fib" [fibo1,fibo2,fibo3,addrule]
 -- solveCHR $ fib 20 x  where x free

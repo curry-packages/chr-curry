@@ -2,7 +2,7 @@
 --- CHR(Curry): union-find algorithm in CHR
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-missing-signatures #-}
@@ -53,6 +53,7 @@ main65 x y =
              find 'b' x, find 'd' y] --> x='a', y='e'
 
 
-compileUF = compileCHR "UFCHR" [makeI,unionI,findNode,findRoot,linkEq,linkTo]
+compileUF =
+  compileCHR "UFCHR" "UnionFind" [makeI,unionI,findNode,findRoot,linkEq,linkTo]
 -- solveCHR $ andC [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]
 --> x=1, y=5

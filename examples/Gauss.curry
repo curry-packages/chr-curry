@@ -2,15 +2,14 @@
 --- CHR(Curry): solving linear arithmetic equations with Gaussian elimination
 ---
 --- @author Michael Hanus
---- @version February 2015
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-missing-signatures #-}
 
 import CHR
-import Float
-import Sort(mergeSortBy)
-import Unsafe(compareAnyTerm)
+import Data.List        ( sortBy )
+import System.IO.Unsafe ( compareAnyTerm )
 
 infix  7 :*:
 infixr 6 :+:
@@ -22,7 +21,8 @@ infix  5 :=:
 type Poly = [(Float,Float)] -- a polynom is a list of (coeff,variable)
 
 data Gauss = Equals Poly Float 
-           | ArithOp (Float->Float->Float) Float Float Float
+           | Plus Float Float Float
+           | Mult Float Float Float
 
 -- Notational abbreviations:
 (:*:) :: Float -> Float -> Poly
@@ -33,9 +33,8 @@ p :+: q = p ++ q
 
 -- CHR constraints:
 (:=:)   = toGoal2 Equals
-arithop = toGoal4 ArithOp
-plus    = arithop (+.)
-mult    = arithop (*.)
+plus    = toGoal3 Plus
+mult    = toGoal3 Mult
 
 -- Specific primitive constraints:
 -- Find and delete some element in a list.
@@ -45,18 +44,18 @@ select x xs zs = anyPrim $ \() -> del xs zs
                ? (let q1 free in del p q1 & q =:= y:q1)
 
 -- Multiply a polynomial p with a constant c.
-polyMult c p q = anyPrim $ \() -> q =:= map (\ (a,x) -> (a*.c,x)) p
+polyMult c p q = anyPrim $ \() -> q =:= map (\ (a,x) -> (a*c,x)) p
 
 -- Add two polynomials
 polyAdd ps qs rs = anyPrim $ \() ->
- let ops = mergeSortBy (\ (_,x) (_,y) -> compareAnyTerm x y /= GT) ps
-     oqs = mergeSortBy (\ (_,x) (_,y) -> compareAnyTerm x y /= GT) qs
+ let ops = sortBy (\ (_,x) (_,y) -> compareAnyTerm x y /= GT) ps
+     oqs = sortBy (\ (_,x) (_,y) -> compareAnyTerm x y /= GT) qs
   in rs =:= addP ops oqs
  where
   addP [] ys = ys
   addP (x:xs) [] = x:xs
   addP ((i,x):xs) ((j,y):ys)
-    | compareAnyTerm x y == EQ = (i+.j,x) : addP xs ys
+    | compareAnyTerm x y == EQ = (i+j,x) : addP xs ys
     | compareAnyTerm x y == LT = (i,x) : addP xs ((j,y):ys)
     | otherwise                = (j,y) : addP ((i,x):xs) ys
 
@@ -64,27 +63,26 @@ polyAdd ps qs rs = anyPrim $ \() ->
 -- main rule: eliminate a term in a polynomial:
 eliminate [a,x,c1,c2,b,c,c1c,c3] = let p,p1,p2,p1c,p3 free in
   ((a,x):p1) :=: c1 \\ p :=: c2 <=> select (b,x) p p2 |>
-   c .=. 0.0 -. b /. a /\
+   c .=. 0.0 - b / a /\
    mult c1  c c1c /\ polyMult c p1 p1c /\
    plus c1c c2 c3 /\ polyAdd p2 p1c p3 /\
    p3 :=: c3
 
 -- remove constant monomials:
 constM [a,x,c] = let p,q free in
-  p :=: c <=> select (a,x) p q /\ nonvar x |> q :=: (c -. a *. x)
+  p :=: c <=> select (a,x) p q /\ nonvar x |> q :=: (c - a * x)
 
 -- empty polynomials have zero value:
 emptyP [c] = [] :=: c <=> c .=. 0.0
 
 -- bind a variable if unique:
-bindVar [a,x,c] = [(a,x)] :=: c <=> x .=. c /. a
+bindVar [a,x,c] = [(a,x)] :=: c <=> x .=. c / a
 
 -- Simplify arithmetic relations:
-arithrule [x,y,z] = arithop op x y z <=> nonvar x /\ nonvar y |>
-                                         z .=. x `op` y
-  where op free
+evalPlus [x,y,z] = plus x y z <=> nonvar x /\ nonvar y |> z .=. x + y
+evalMult [x,y,z] = mult x y z <=> nonvar x /\ nonvar y |> z .=. x * y
 
-runGauss = runCHR [arithrule,emptyP,constM,eliminate,bindVar]
+runGauss = runCHR [evalPlus,evalMult,emptyP,constM,eliminate,bindVar]
 
 main80 x y = runGauss $ 3:*:x :=: 6 /\ 2:*:x :+: 6:*:y :=: 10.0
 main81 x y = runGauss $
@@ -117,6 +115,8 @@ main86 i = runGauss $ cvi (Parallel (Resistor 180) (Resistor 470)) 5 i
 -- i=0.038416075650118
 
 ----------------------------------------------------------------------
-compileGauss = compileCHR "GAUSSCHR" [arithrule,emptyP,constM,eliminate,bindVar]
--- [(3.0,x)] :=: 6.0 /\ [(2.0,x),(6.0,y)] :=: 10.0
---> x=2.0, y=1.0
+compileGauss =
+  compileCHR "GAUSSCHR" "Gauss"
+             [evalPlus, evalMult, emptyP, constM, eliminate, bindVar]
+-- solveCHR $ [(3.0,x)] :=: 6.0 /\ [(2.0,x),(6.0,y)] :=: 10.0
+-- --> x=2.0, y=1.0

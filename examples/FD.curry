@@ -5,13 +5,13 @@
 --- as primitive constraints in CHR(Curry)
 ---
 --- @author Michael Hanus
---- @version October 2016
+--- @version July 2021
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-missing-signatures #-}
 
 import CHR
-import qualified List
+import qualified Data.List
 
 ----------------------------------------------------------------------
 -- Finite domain constraints in CHR (influence from SWI-Prolog manual)
@@ -19,8 +19,8 @@ data FDom = Dom Int [Int] | Diff Int Int
 
 dom  = toGoal2 Dom
 diff = toGoal2 Diff
-intersect xs ys zs = anyPrim (\() -> zs =:= List.intersect xs ys)
-delete x ys zs = anyPrim $ \() -> zs =:= List.delete x ys
+intersect xs ys zs = anyPrim (\() -> zs =:= Data.List.intersect xs ys)
+delete x ys zs = anyPrim $ \() -> zs =:= Data.List.delete x ys
 member x xs = anyPrim $ \() -> contains x xs
  where contains z (y:ys) = z=:=y ? contains z ys
 
@@ -93,4 +93,5 @@ main55 [l1,l2,l3,l4] = labeling runFD2 $
   diff l2 l4 /\ diff l3 l4 /\ l2 .=. 3  -- fix color of L2
 
 
-compileFD = compileCHR "FDCHR" [dom1,dom2,dom3,dom4,diff1,diff2,diff3,diff4]
+compileFD =
+  compileCHR "FDCHR" "FD" [dom1,dom2,dom3,dom4,diff1,diff2,diff3,diff4]

@@ -9,7 +9,6 @@
 ---
 --- @author Michael Hanus
 --- @version February 2015
---- @category general
 ----------------------------------------------------------------------
 
 module CHRcompiled where
@@ -58,4 +57,5 @@ solveCHR (Goal g) | g = warnSuspendedConstraints True
 --- otherwise only the first one.
 warnSuspendedConstraints :: Bool -> Bool
 warnSuspendedConstraints external
+
 
