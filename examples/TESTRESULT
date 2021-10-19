@@ -1,82 +1,93 @@
-Loading program Leq
-main10
+:load Leq
+main10 x        where x free
 {x=1} []
-main11
+main11 (x::Int) y z    where x,y,z free
 {x=x, y=x, z=x} []
-main12
+main12 (x::Int) y z z' where x,y,z,z' free
 {x=x, y=y, z=z, z'=z'} [Leq z z',Leq x y]
-Loading program Bool
-main20
+
+:load Bool
+main20 x y z    where x,y,z free
 {x=True, y=True, z=True} []
-main21
+main21 a b s c  where a,b,s,c free
 {a=True, b=True, s=False, c=True} []
-main22
+main22 a b s c  where a,b,s,c free
 {a=a, b=b, s=s, c=False} [And a b False,Or a b s]
-Loading program GCD
+
+:load GCD
 main30
 [GCD 4]
 main31
 [GCD 2]
+compileGCD
 Curry interface to CHR(Prolog) written to GCDCHR.curry
-Loading program GCDCHR
-solveCHR $ gcdanswer x / gcd 206 / gcd 40 where x free
+:load GCDCHR
+solveCHR $ gcdanswer x /\ gcd 206 /\ gcd 40  where x free
 {x=2} True
-Loading program Fib
-main41
+
+:load Fib
+main41 x    where x free
 {x=21} [Fib 7 21,Fib 4 5,Fib 2 2,Fib 3 3,Fib 5 8,Fib 6 13]
+compileFib
 Curry interface to CHR(Prolog) written to FIBCHR.curry
-Loading program FIBCHR
-solveCHR $ fib 20 x where x free
+:load FIBCHR
+solveCHR $ fib 20 x  where x free
 {x=10946} True
-Loading program FD
-main50
+
+:load FD
+main50 x y      where x,y free
 {x=1, y=1} []
-main51
+main51 x        where x free
 {x=3} []
-main52
+main52 [x,y,z]  where x,y,z free
 {x=2, y=2, z=2} []
-main53
+main53 xs       where xs free
 {xs=[2,3,1]} []
 {xs=[3,2,1]} []
 {xs=[1,3,2]} []
 {xs=[3,1,2]} []
 {xs=[1,2,3]} []
 {xs=[2,1,3]} []
-main55
+main55 xs       where xs free
 {xs=[4,3,2,1]} []
 {xs=[2,3,4,1]} []
 {xs=[4,3,1,2]} []
 {xs=[1,3,4,2]} []
 {xs=[2,3,1,4]} []
 {xs=[1,3,2,4]} []
-Loading program UnionFind
+
+:load UnionFind
 main60
 [Root 1,Arrow 2 1,Root 4,Root 3]
-main61
+main61 x        where x free
 {x=1} [Root 4,Root 3,Arrow 2 1,Root 1]
-main62
+main62 x y      where x,y free
 {x=1, y=3} [Root 4,Arrow 2 1,Arrow 1 3,Root 3]
 main63
 [Root 5,Arrow 3 5,Arrow 4 3,Root 1,Arrow 2 1]
-main64
+main64 x y      where x,y free
 {x=1, y=5} [Root 1,Arrow 2 1,Arrow 4 3,Arrow 3 5,Root 5]
-main65
+main65 x y      where x,y free
 {x='a', y='e'} [Root 'a',Arrow 'b' 'a',Arrow 'd' 'c',Arrow 'c' 'e',Root 'e']
+compileUF
 Curry interface to CHR(Prolog) written to UFCHR.curry
-Loading program UFCHR
-solveCHR $ andCHR [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y] where x,y free
+:load UFCHR
+solveCHR $ andCHR [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]  where x,y free
 {x=1, y=5} True
-Loading program Primes
+
+:load Primes
 main70
 [Prime 2,Prime 19,Prime 17,Prime 3,Prime 13,Prime 11,Prime 7,Prime 5]
-Loading program Gauss
-main80
+
+:load Gauss
+main80 x y      where x,y free
 {x=2.0, y=1.0} []
-main81
+main81 x y      where x,y free
 {x=5.0, y=2.0} []
-main82
+main82 x y      where x,y free
 {x=2.0, y=2.0} []
-main85
+main85 i        where i free
 {i=0.007692307692307692} []
-main86
+main86 i        where i free
 {i=0.0384160756501182} []
+

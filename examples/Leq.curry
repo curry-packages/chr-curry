@@ -25,8 +25,11 @@ leqval [x,y] = leq x y <=> ground x /\ ground y |> x .<=. y
 
 runLEQ = runCHR [reflexivity,antisymmetry,idempotence,transitivity]
 
+main10 :: Int -> [LEQ Int]
 main10 x        = runLEQ $ leq 1 x /\ leq x 1
+
 main11 x y z    = runLEQ $ leq x y /\ leq y z /\ leq z x
+
 main12 x y z z' = runLEQ $ leq x y /\ leq z z'
 
 compileLeq =

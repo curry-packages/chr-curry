@@ -31,22 +31,29 @@ linkTo   [a,b]     = link a b /\ root a /\ root b <=> b ~> a /\ root a
 
 runUF = runCHR [makeI,unionI,findNode,findRoot,linkEq,linkTo]
 
+main60 :: [UF Int]
 main60 = runUF $ andCHR [make 1, make 2, make 3, make 4, union 1 2]
 --> [Root 1,Arrow 2 1,Root 4,Root 3]
+
+main61 :: Int -> [UF Int]
 main61 x = runUF $ andCHR [2 ~> 1,root 1,root 4,root 3, find 2 x] --> x=1
 
+main62 :: Int -> Int -> [UF Int]
 main62 x y = runUF $ andCHR [2 ~> 1,root 1,root 4,root 3, find 2 x,
                              union 3 2, find 2 y]
 --> x=1, y=3
 
+main63 :: [UF Int]
 main63 = runUF $ andCHR [make 1, make 2, make 3, make 4, make 5,
                          union 1 2, union 3 4, union 5 3]
 
+main64 :: Int -> Int -> [UF Int]
 main64 x y = runUF $ andCHR
   [make 1, make 2, make 3, make 4, make 5,
    union 1 2, union 3 4, union 5 3, find 2 x, find 4 y] --> x=1, y=5
 
 -- union/find on character elements:
+main65 :: Char -> Char -> [UF Char]
 main65 x y =
   runUF $ andCHR $ map make "abcde" ++
             [union 'a' 'b', union 'c' 'd', union 'e' 'c',
