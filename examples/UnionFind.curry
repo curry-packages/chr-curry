@@ -62,5 +62,5 @@ main65 x y =
 
 compileUF =
   compileCHR "UFCHR" "UnionFind" [makeI,unionI,findNode,findRoot,linkEq,linkTo]
--- solveCHR $ andC [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]
+-- solveCHR $ andC [make (1::Int), make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]
 --> x=1, y=5

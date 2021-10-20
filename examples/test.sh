@@ -59,7 +59,7 @@ main64 x y      where x,y free
 main65 x y      where x,y free
 compileUF
 :load UFCHR
-solveCHR $ andCHR [make 1, make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]  where x,y free
+solveCHR $ andCHR [make (1::Int), make 2, make 3, make 4, make 5, union 1 2, union 3 4, union 5 3, find 2 x, find 4 y]  where x,y free
 
 :load Primes
 main70
