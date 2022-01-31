@@ -1,24 +1,21 @@
 #!/bin/sh
 # Shell script to test the current set of CHR(Curry) examples
 
-# Root location of the Curry System specified by variable CURRYROOT
-CURRYROOT=`$CURRYBIN :set v0 :set -time :add Curry.Compiler.Distribution :eval "putStrLn installDir" :quit`
-CURRYBINDIR=$CURRYROOT/bin
-
-BACKEND=`$CURRYBIN --noreadline :set v0 :set -time :load Curry.Compiler.Distribution :eval "putStrLn (curryRuntime ++ show curryRuntimeMajorVersion)" :quit 2> /dev/null`
-
-VERBOSE=no
+VERBOSE=no # no longer used...
 if [ "$1" = "-v" ] ; then
   VERBOSE=yes
 fi
 
+# Extract information about the back end:
+BACKEND=`$CURRYBIN --noreadline :set v0 :set -time :load Curry.Compiler.Distribution :eval "putStrLn (curryRuntime ++ show curryRuntimeMajorVersion)" :quit 2> /dev/null`
+# check back end:
 if [ "$BACKEND" != sicstus4 -a "$BACKEND" != swi6 -a "$BACKEND" != swi7 -a "$BACKEND" != swi8 ] ; then
   echo "No appropriate Prolog back end, skip the CHR tests."
   exit
 fi
 
 LOGFILE=xxx$$
-$CURRYBINDIR/cleancurry
+/bin/rm -rf .curry
 cat << EOM | $CURRYBIN -q :set -interactive :set v0 :set printdepth 0 :set -time :set +echo | tee $LOGFILE
 :load Leq
 main10 x        where x free
@@ -74,14 +71,11 @@ main86 i        where i free
 EOM
 # clean up:
 for p in GCDCHR FIBCHR UFCHR GAUSSCHR ; do
-    $CURRYBINDIR/cleancurry $p
     /bin/rm -f $p*
 done
-$CURRYBINDIR/cleancurry
+/bin/rm -rf .curry
 ################ end of tests ####################
-if [ $VERBOSE = yes ] ; then
-    cat $LOGFILE
-fi
+
 # Check differences:
 DIFF=diff$$
 diff TESTRESULT $LOGFILE > $DIFF
