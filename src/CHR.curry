@@ -35,10 +35,11 @@ import Data.Set.RBTree   ( SetRBT, member, empty, insert )
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
-import FlatCurry.Pretty      ( defaultOptions, ppTypeExp )
+import FlatCurry.Pretty        ( defaultOptions, ppTypeExp )
 import Language.Prolog.Types
-import Language.Prolog.Show  ( showPlClause, showPlGoals )
-import Text.Pretty           ( showWidth )
+import Language.Prolog.Goodies ( plList )
+import Language.Prolog.Show    ( showPlClause, showPlGoals )
+import Text.Pretty             ( showWidth )
 import XML
 
 -------------------------------------------------------------------------------
