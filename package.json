@@ -1,15 +1,14 @@
 {
     "name": "chr-curry",
-    "version": "3.0.0",
+    "version": "3.2.0",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "A library to use Constraint Handling Rules in Curry programs",
     "category": [ "Constraints" ],
     "dependencies": {
-        "base"         : ">= 3.0.0, < 4.0.0",
+        "base"         : ">= 3.2.0, < 4.0.0",
         "flatcurry"    : ">= 3.0.0, < 4.0.0",
         "prolog"       : ">= 3.0.0, < 4.0.0",
         "redblacktree" : ">= 3.0.0, < 4.0.0",
-        "searchtree"   : ">= 3.0.0, < 4.0.0",
         "wl-pprint"    : ">= 3.0.0, < 4.0.0",
         "xml"          : ">= 3.0.0, < 4.0.0"
     },
@@ -26,7 +25,7 @@
         "script":  "test.sh"
     },
      "source": {
-        "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/chr-curry.git",
+        "git": "https://github.com/curry-packages/chr-curry.git",
         "tag": "$version"
     }
 }

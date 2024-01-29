@@ -11,7 +11,7 @@
 ---     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" "MyRules" [rule1,rule2]' :q
 ---
 --- @author Michael Hanus
---- @version July 2021
+--- @version January 2024
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
@@ -30,8 +30,8 @@ import Data.Char
 import Data.List
 import System.IO.Unsafe -- for tracing
 
-import Control.Findall   ( rewriteSome )
-import Data.Set.RBTree   ( SetRBT, member, empty, insert )
+import Control.Search.Unsafe   ( rewriteSome )
+import Data.Set.RBTree         ( SetRBT, member, empty, insert )
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies

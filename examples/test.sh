@@ -7,10 +7,10 @@ if [ "$1" = "-v" ] ; then
 fi
 
 # Extract information about the back end:
-BACKEND=`$CURRYBIN --noreadline :set v0 :set -time :load Curry.Compiler.Distribution :eval "putStrLn (curryRuntime ++ show curryRuntimeMajorVersion)" :quit 2> /dev/null`
+BACKEND=`$CURRYBIN --noreadline -q :set v0 :set -time :load Curry.Compiler.Distribution :eval "putStrLn (curryRuntime ++ show curryRuntimeMajorVersion)" :quit 2> /dev/null`
 # check back end:
 if [ "$BACKEND" != sicstus4 -a "$BACKEND" != swi6 -a "$BACKEND" != swi7 -a "$BACKEND" != swi8 ] ; then
-  echo "No appropriate Prolog back end, skip the CHR tests."
+  echo "No appropriate Prolog back end ($BACKEND), skip the CHR tests."
   exit
 fi
 
