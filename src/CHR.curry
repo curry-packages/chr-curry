@@ -11,7 +11,7 @@
 ---     > pakcs :l MyRules :add CHR :eval 'compileCHR "MyCHR" "MyRules" [rule1,rule2]' :q
 ---
 --- @author Michael Hanus
---- @version January 2024
+--- @version July 2024
 ----------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns -Wno-overlapping #-}
@@ -438,11 +438,12 @@ compileRules modname chrmodname rids = do
   (Prog _ _ _ fdecls opdecls) <- readFlatCurry modname
   let getftype = getFuncType fdecls
       rdefs = filter (\ (Func fname _ _ _ _) -> snd fname `elem` rids) fdecls
-      (chrs,_) = unzip (map (compileRule getftype id []) (map funcRule rdefs))
+      (chrs,_) = unzip (map (compileRule getftype id [])
+                            (map (\fd -> (funcName fd, funcRule fd)) rdefs))
       allchrs = nub (concat chrs)
       rnmchr = rnmCHR chrmodname (map fst allchrs)
       (_,trules) = unzip (map (compileRule getftype rnmchr allchrs)
-                              (map funcRule rdefs))
+                              (map (\fd -> (funcName fd, funcRule fd)) rdefs))
       allchrtypes = zip allchrs (map getftype (map fst allchrs))
       curryprog = showCHRModule modname chrmodname opdecls allchrtypes
       prologprog = unlines $
@@ -548,12 +549,13 @@ constraints2xml prologmod constraints =
             xml "entry" [xtxt (showCName ("prim_"++cname))]]
 
 -- compile a single CHR rule:
-compileRule :: (QName -> TypeExpr) -> (QName -> QName) -> [(QName,Int)] -> Rule
-            -> ([(QName,Int)],String)
-compileRule _ _ _ (External _) = error "CHR.compileRule: external rule"
-compileRule getftype rnmchr chrs (Rule _ rhs) =
-  let (_,rchrs,trule) = exp2CHR 100 (firstBranch rhs)
-   in (rchrs, trule ++ ".")
+compileRule :: (QName -> TypeExpr) -> (QName -> QName) -> [(QName,Int)]
+            -> (QName,Rule) -> ([(QName,Int)],String)
+compileRule _ _ _ (qrn, External _) =
+  error $ "CHR.compileRule: external rule '" ++ snd qrn ++ "'"
+compileRule getftype rnmchr chrs (qrn, Rule _ rhs) =
+  let (_,rchrs,trule) = exp2CHR 100 (firstBranch qrn rhs)
+  in (rchrs, trule ++ ".")
  where
   exp2CHR i exp = case exp of
     Comb FuncCall qf [a1,a2]
@@ -610,14 +612,17 @@ isCHRType texp = case texp of
   _             -> False
 
 -- get the first branch of a function definition
-firstBranch :: Expr -> Expr
-firstBranch exp = case exp of
+firstBranch :: QName -> Expr -> Expr
+firstBranch qf exp = case exp of
   Case _ _ (Branch _ bexp : brs) ->
-      if null brs
-      then firstBranch bexp
-      else error ("CHR rule with more than one branch: "++show exp)
-  Free _ fexp                   -> firstBranch fexp
+    if all isFailedBranch brs
+      then firstBranch qf bexp
+      else error $ "CHR rule '" ++ snd qf ++ "' with more than one branch:\n" ++
+                   show exp
+  Free _ fexp                   -> firstBranch qf fexp
   _                             -> exp
+ where
+  isFailedBranch (Branch _ be) = be == Comb FuncCall ("Prelude","failed") []
 
 -- reduce h.o. applications to a known function:
 reduceApply :: Expr -> Expr
